@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沃土风格 · AI工艺老师傅(演示版)</title>
+<style>
+:root{
+  --bg:#0f1e33; --bg2:#0a1526; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.07);
+  --line:rgba(46,123,246,.28); --line2:rgba(132,148,168,.18);
+  --blue:#2e7bf6; --blue2:#165DFF; --blue3:#4a9bff; --cyan:#2299DD; --green:#0f9d58;
+  --tx:#e6ecf5; --tx2:#8494a8; --tx3:#5b6b82; --mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+  --sans:'Space Grotesk','PingFang SC','Microsoft YaHei',-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:15px;line-height:1.65;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(130% 90% at 50% 0%, rgba(46,123,246,.16), transparent 62%);
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(132,148,168,.25);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+a{color:var(--blue3);text-decoration:none}
+
+/* ---------- 顶部导航 ---------- */
+header{position:fixed;top:0;left:0;right:0;height:58px;z-index:50;
+  background:rgba(15,30,51,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line2);
+  display:flex;align-items:center;gap:26px;padding:0 22px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:.5px;cursor:default}
+.logo .mk{width:32px;height:32px;border-radius:9px;flex:none;
+  background:linear-gradient(135deg,#2e7bf6,#2299DD);display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;color:#fff;box-shadow:0 0 16px rgba(46,123,246,.55);animation:wt-pulse 2s ease-in-out infinite}
+.logo .sub{display:block;font-size:11px;font-weight:400;color:var(--tx3);letter-spacing:1px}
+nav{display:flex;gap:22px;font-size:14px;color:var(--tx2)}
+nav span{cursor:pointer;transition:color .2s}
+nav span:hover{color:var(--tx)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.pill{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);color:var(--tx2);white-space:nowrap}
+.pill.ok{border-color:rgba(15,157,88,.5);color:#3ecf8e}
+.pill.warn{border-color:rgba(255,190,90,.5);color:#ffbe5a}
+.btn{font-size:13px;padding:7px 16px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--tx);cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--blue);color:var(--blue3)}
+.btn.primary{background:linear-gradient(135deg,#2e7bf6,#165DFF);border:none;color:#fff;font-weight:600;box-shadow:0 2px 12px rgba(46,123,246,.4)}
+.btn.primary:hover{filter:brightness(1.12)}
+.btn.primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+/* ---------- 布局 ---------- */
+.layout{display:flex;height:calc(100vh - 58px);margin-top:58px;position:relative;z-index:1}
+aside{width:252px;flex:none;border-right:1px solid var(--line2);display:flex;flex-direction:column;background:rgba(10,21,38,.5)}
+aside .newbtn{margin:14px 14px 8px;display:flex;align-items:center;gap:8px;justify-content:center;padding:10px;border-radius:11px;
+  border:1px dashed rgba(46,123,246,.5);color:var(--blue3);cursor:pointer;font-size:14px;transition:all .2s;background:rgba(46,123,246,.06)}
+aside .newbtn:hover{background:rgba(46,123,246,.13);border-style:solid}
+.conv-list{flex:1;overflow-y:auto;padding:4px 10px 14px}
+.conv-item{padding:10px 12px;border-radius:10px;cursor:pointer;font-size:13.5px;color:var(--tx2);margin-bottom:3px;
+  display:flex;align-items:center;gap:8px;transition:all .15s;position:relative}
+.conv-item:hover{background:var(--panel)}
+.conv-item.active{background:rgba(46,123,246,.14);color:var(--tx)}
+.conv-item .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv-item .del{opacity:0;font-size:14px;color:var(--tx3);padding:0 3px;transition:opacity .15s;flex:none}
+.conv-item:hover .del{opacity:1}
+.conv-item .del:hover{color:#ff6b6b}
+aside .foot{padding:12px 16px;border-top:1px solid var(--line2);font-size:11px;color:var(--tx3);line-height:1.5}
+
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+.chat-scroll{flex:1;overflow-y:auto;padding:20px 24px 10px}
+.chat-inner{max-width:880px;margin:0 auto}
+
+/* ---------- 欢迎区 ---------- */
+.hero{text-align:center;padding:34px 0 26px}
+.hero .badge{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;letter-spacing:1.5px;
+  padding:6px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(46,123,246,.08);color:var(--blue3);margin-bottom:18px}
+.hero h1{font-size:36px;font-weight:700;letter-spacing:1px;line-height:1.3}
+.hero h1 .grad{background:linear-gradient(120deg,#5aa9ff,#2e7bf6 45%,#2299DD);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:12px auto 0;max-width:560px;color:var(--tx2);font-size:14.5px}
+.stats{display:flex;justify-content:center;gap:0;margin:30px 0 6px}
+.stat{flex:0 1 180px;padding:4px 26px;border-right:1px solid var(--line2)}
+.stat:last-child{border-right:none}
+.stat b{display:block;font-size:26px;font-weight:700;background:linear-gradient(120deg,#5aa9ff,#2299DD);-webkit-background-clip:text;background-clip:text;color:transparent;font-family:var(--sans)}
+.stat i{font-style:normal;font-size:12px;color:var(--tx3);letter-spacing:1px}
+
+/* 功能卡片 */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:26px 0 8px}
+.card{position:relative;border:1px solid var(--line2);border-radius:16px;padding:22px 22px 18px;cursor:pointer;overflow:hidden;
+  background:linear-gradient(180deg,var(--panel),transparent);transition:all .25s;text-align:left}
+.card:hover{border-color:rgba(46,123,246,.6);transform:translateY(-3px);box-shadow:0 10px 34px rgba(46,123,246,.18)}
+.card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(46,123,246,.7),transparent);opacity:0;transition:opacity .25s}
+.card:hover::after{opacity:1}
+.card .num{font-family:var(--mono);font-size:13px;color:var(--blue3);letter-spacing:2px;opacity:.9}
+.card h3{font-size:17.5px;margin:8px 0 7px;letter-spacing:.5px}
+.card p{font-size:13px;color:var(--tx2);line-height:1.7}
+.card .go{margin-top:12px;font-size:13px;color:var(--blue3);display:inline-flex;align-items:center;gap:5px}
+.card .go svg{transition:transform .2s}
+.card:hover .go svg{transform:translateX(4px)}
+.sugg{margin-top:22px}
+.sugg .lbl{font-family:var(--mono);font-size:11px;color:var(--tx3);letter-spacing:2px;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-size:13px;padding:8px 15px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--tx2);cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--blue);color:var(--tx);background:rgba(46,123,246,.1)}
+
+/* ---------- 消息 ---------- */
+.msg{display:flex;gap:13px;margin-bottom:26px}
+.msg .avatar{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin-top:2px}
+.msg.user{flex-direction:row-reverse}
+.msg.user .avatar{background:linear-gradient(135deg,#2e7bf6,#165DFF);color:#fff;box-shadow:0 0 12px rgba(46,123,246,.4)}
+.msg.assistant .avatar{background:rgba(46,123,246,.16);border:1px solid var(--line);color:var(--blue3)}
+.msg .bubble{max-width:78%;min-width:0}
+.msg.user .bubble{background:linear-gradient(135deg,rgba(46,123,246,.22),rgba(22,95,255,.14));border:1px solid rgba(46,123,246,.35);
+  border-radius:16px 4px 16px 16px;padding:11px 16px;font-size:14.5px;white-space:pre-wrap;word-break:break-word}
+.msg.assistant .bubble{padding:2px 4px;font-size:14.5px;word-break:break-word}
+.msg .imgbox{margin:6px 0 0}
+.msg .imgbox img{max-width:260px;max-height:200px;border-radius:10px;border:1px solid var(--line2);display:block}
+.cursor{display:inline-block;width:8px;height:16px;background:var(--blue3);vertical-align:-2px;margin-left:2px;animation:wt-pulse .8s ease-in-out infinite;border-radius:2px}
+
+/* markdown */
+.md p{margin:7px 0}
+.md h1,.md h2,.md h3,.md h4{margin:16px 0 8px;letter-spacing:.5px}
+.md h1{font-size:20px}.md h2{font-size:18px}.md h3{font-size:16px}
+.md ul,.md ol{margin:8px 0;padding-left:22px}
+.md li{margin:4px 0}
+.md code{font-family:var(--mono);font-size:13px;background:rgba(46,123,246,.14);color:#9dcdf8;padding:2px 7px;border-radius:6px}
+.md pre{background:#0a1526;border:1px solid var(--line2);border-radius:12px;padding:14px 16px;overflow-x:auto;margin:10px 0}
+.md pre code{background:none;padding:0;color:#c3d6f2;font-size:13px;line-height:1.6}
+.md blockquote{border-left:3px solid var(--blue);padding:4px 14px;margin:10px 0;color:var(--tx2);background:rgba(46,123,246,.05);border-radius:0 8px 8px 0}
+.md table{border-collapse:collapse;margin:12px 0;width:100%;font-size:13.5px;display:block;overflow-x:auto}
+.md th,.md td{border:1px solid var(--line2);padding:8px 13px;text-align:left;white-space:nowrap}
+.md th{background:rgba(46,123,246,.14);color:var(--blue3);font-weight:600}
+.md tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+.md hr{border:none;border-top:1px solid var(--line2);margin:14px 0}
+.md strong{color:#fff;font-weight:650}
+.md em{color:var(--blue3);font-style:normal;font-weight:600}
+
+/* ---------- 输入区 ---------- */
+.composer{flex:none;padding:10px 24px 18px}
+.composer-inner{max-width:880px;margin:0 auto}
+.inputbox{border:1px solid var(--line);border-radius:16px;background:rgba(10,21,38,.85);backdrop-filter:blur(8px);
+  box-shadow:0 6px 30px rgba(0,0,0,.25);transition:border-color .2s}
+.inputbox:focus-within{border-color:rgba(46,123,246,.7);box-shadow:0 6px 30px rgba(46,123,246,.12)}
+.inputbox textarea{width:100%;background:none;border:none;outline:none;resize:none;color:var(--tx);
+  font-family:var(--sans);font-size:14.5px;line-height:1.6;padding:13px 16px 4px;max-height:180px;display:block}
+.inputbox .tools{display:flex;align-items:center;gap:10px;padding:8px 12px 12px}
+.tool{width:33px;height:33px;border-radius:9px;border:none;background:none;color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.tool:hover{background:var(--panel2);color:var(--blue3)}
+.tool svg{width:18px;height:18px}
+.img-chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:4px 6px 4px 10px;border-radius:8px;
+  background:rgba(46,123,246,.13);border:1px solid var(--line);color:var(--blue3);max-width:180px}
+.img-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.img-chip button{border:none;background:none;color:var(--tx3);cursor:pointer;font-size:13px;padding:0 3px}
+.img-chip button:hover{color:#ff6b6b}
+.model-sel{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--line2);color:var(--tx2);
+  border-radius:8px;padding:6px 9px;outline:none;cursor:pointer;max-width:230px}
+.model-sel option{background:#0f1e33}
+.send{width:36px;height:36px;border-radius:11px;border:none;margin-left:auto;flex:none;cursor:pointer;
+  background:linear-gradient(135deg,#2e7bf6,#165DFF);color:#fff;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.send:hover{filter:brightness(1.15)}
+.send:disabled{opacity:.35;cursor:not-allowed}
+.send svg{width:17px;height:17px}
+.stop{background:#ff6b6b}
+.hint{text-align:center;font-size:11px;color:var(--tx3);margin-top:8px;letter-spacing:.5px}
+.hint b{color:var(--tx2);font-weight:400}
+
+/* ---------- 设置弹窗 ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(5,10,20,.7);backdrop-filter:blur(5px);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{width:520px;max-width:94vw;background:#10233d;border:1px solid var(--line);border-radius:18px;padding:26px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h2{font-size:18px;margin-bottom:5px}
+.modal .desc{font-size:13px;color:var(--tx2);margin-bottom:20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--tx2);margin-bottom:7px}
+.field label b{color:var(--blue3);font-family:var(--mono);font-weight:400;font-size:12px;margin-left:6px}
+.field input{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:10px;color:var(--tx);
+  padding:10px 14px;font-size:13.5px;outline:none;font-family:var(--mono);transition:border-color .2s}
+.field input:focus{border-color:var(--blue)}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+.modal .tip{font-size:12px;color:var(--tx3);line-height:1.7;margin-top:16px;padding:12px;border-radius:10px;background:rgba(46,123,246,.06);border:1px solid var(--line2)}
+.modal .tip a{color:var(--blue3)}
+
+/* 提示条 */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:200;
+  background:#10233d;border:1px solid var(--line);color:var(--tx);font-size:13.5px;padding:11px 22px;border-radius:12px;
+  box-shadow:0 10px 34px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .3s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:rgba(255,107,107,.6);color:#ff9d9d}
+
+/* 动画 */
+@keyframes wt-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes wt-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes wt-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.wt-float{animation:wt-float 4.5s ease-in-out infinite}
+.wt-pulse{animation:wt-pulse 2s ease-in-out infinite}
+
+@media(max-width:900px){
+  aside{display:none}
+  .cards{grid-template-columns:1fr}
+  .stats{flex-wrap:wrap}
+  .stat{flex-basis:45%;border:none}
+  nav{display:none}
+  .msg .bubble{max-width:90%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="mk">沃</div>
+    <div>沃土工业大模型<span class="sub">LEVELFIELD 风格演示 · 免费模型驱动</span></div>
+  </div>
+  <nav>
+    <span onclick="quick(1)">图纸解析</span>
+    <span onclick="quick(2)">工艺路线</span>
+    <span onclick="openSettings()">模型设置</span>
+  </nav>
+  <div class="header-right">
+    <span class="pill" id="keyPill">未配置 API Key</span>
+    <button class="btn" onclick="openSettings()">⚙ 设置</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="newbtn" onclick="newChat()">＋ 新建对话</div>
+    <div class="conv-list" id="convList"></div>
+    <div class="foot">本页为界面风格学习演示,使用硅基流动免费模型,与蓝沃AI官方无关。<br>API Key 仅保存在本机浏览器。</div>
+  </aside>
+
+  <main>
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-inner" id="chatInner">
+        <!-- 欢迎区 -->
+        <div class="hero" id="hero">
+          <div class="badge wt-float">◆ 开源免费 · AI工艺老师傅 · 在线体验</div>
+          <h1>行业首个专为<span class="grad">非标机加工</span>设计的<br>工业大模型体验站</h1>
+          <p>输入一张 2D 工艺图纸,识别车、铣、刨、钻、镗等 18 类机加工艺——让机加工工艺像对话一样简单。本站由市面免费大模型 API 驱动。</p>
+          <div class="stats">
+            <div class="stat"><b>18</b><i>类机加工艺</i></div>
+            <div class="stat"><b>95%+</b><i>工序识别准确率</i></div>
+            <div class="stat"><b>6</b><i>款免费模型</i></div>
+            <div class="stat"><b>¥0</b><i>调用成本</i></div>
+          </div>
+        </div>
+
+        <div class="cards" id="cards">
+          <div class="card" onclick="quick(1)">
+            <div class="num">01</div>
+            <h3>加工图纸解析</h3>
+            <p>上传一张 2D 工艺图纸(PNG / JPG),自动提取:零件名称、图号、材料、尺寸与公差、粗糙度等技术要求。</p>
+            <span class="go">立即体验 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+          </div>
+          <div class="card" onclick="quick(2)">
+            <div class="num">02</div>
+            <h3>工艺路线推荐</h3>
+            <p>输入零件技术要求与加工需求,生成完整工艺路线与优化建议:工序顺序、设备选型、装夹与切削参数。</p>
+            <span class="go">立即体验 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+          </div>
+        </div>
+
+        <div class="sugg" id="sugg">
+          <div class="lbl">// 试试这样问</div>
+          <div class="chips">
+            <span class="chip" onclick="chipAsk('帮我解析一张轴类零件的加工图纸,输出零件名称、图号、材料、公差和粗糙度要求')">解析轴类零件图纸</span>
+            <span class="chip" onclick="chipAsk('材料 45 钢,外圆 φ50±0.01,表面粗糙度 Ra1.6,请推荐工艺路线')">推荐 45 钢轴工艺路线</span>
+            <span class="chip" onclick="chipAsk('18 类机加工艺分别是什么?各用什么设备?')">什么是 18 类机加工艺</span>
+            <span class="chip" onclick="chipAsk('车削外圆时,粗车和精车的切削三要素一般怎么选?')">车削切削参数怎么选</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <div class="inputbox">
+          <textarea id="ta" rows="1" placeholder="向 AI 工艺老师傅提问,或上传 2D 工艺图纸… (Enter 发送 / Shift+Enter 换行)"></textarea>
+          <div class="tools">
+            <button class="tool" id="imgBtn" title="上传图纸(自动切换视觉模型)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></button>
+            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+            <div id="imgChips"></div>
+            <select class="model-sel" id="modelSel" title="选择模型"></select>
+            <button class="send" id="sendBtn" title="发送" onclick="send()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="hint">免费模型由 <b>硅基流动 SiliconFlow</b> 提供 · 首次使用请点击右上角「设置」粘贴 API Key(免费注册即可获得)</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>⚙ 模型设置</h2>
+    <div class="desc">接入硅基流动免费模型 API,密钥仅保存在本机浏览器 localStorage,不会上传到任何服务器。</div>
+    <div class="field">
+      <label>API Key<b>sk-xxxx</b></label>
+      <input id="setKey" type="password" placeholder="sk-xxxxxxxxxxxxxxxx">
+    </div>
+    <div class="field">
+      <label>接口地址<b>Base URL</b></label>
+      <input id="setBase" value="https://api.siliconflow.cn/v1">
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="testKey()">测试连接</button>
+      <button class="btn" onclick="closeSettings()">取消</button>
+      <button class="btn primary" onclick="saveSettings()">保存</button>
+    </div>
+    <div class="tip">
+      🔑 还没有 Key?前往 <a href="https://cloud.siliconflow.cn" target="_blank">cloud.siliconflow.cn</a> 免费注册(手机号即可),控制台「API 密钥」新建后复制 sk- 开头的密钥。<br>
+      新用户赠送约 2000 万 Token,9B 以下小模型(通义千问、DeepSeek 蒸馏、GLM-4.1V 视觉等)长期免费。
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 配置 ================= */
+const CFG_KEY='wotu_cfg_v1', CONV_KEY='wotu_convos_v1';
+let cfg = {apiKey:'', baseUrl:'https://api.siliconflow.cn/v1', model:'Qwen/Qwen3-8B'};
+try{cfg = Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY)||'{}'))}catch(e){}
+
+const MODELS = [
+  {id:'Qwen/Qwen3-8B',                          name:'通义千问3 · 8B',       tag:'免费 · 通用',   vision:false},
+  {id:'deepseek-ai/DeepSeek-R1-0528-Qwen3-8B',  name:'DeepSeek-R1 蒸馏',     tag:'免费 · 推理',   vision:false},
+  {id:'Qwen/Qwen2.5-Coder-7B-Instruct',         name:'通义 Coder · 7B',      tag:'免费 · 代码',   vision:false},
+  {id:'THUDM/GLM-4.1V-9B-Thinking',             name:'GLM-4.1V · 视觉',      tag:'免费 · 识图',   vision:true},
+  {id:'deepseek-ai/DeepSeek-OCR',               name:'DeepSeek-OCR',         tag:'免费 · 文字提取', vision:true, ocr:true},
+  {id:'Qwen/Qwen2.5-7B-Instruct',               name:'通义千问2.5 · 7B',     tag:'免费 · 通用',   vision:false},
+];
+const SYS_PROCESS = `你是一位拥有 30 年经验的老机械工艺工程师,人称"AI工艺老师傅"。你精通车、铣、刨、钻、镗、磨、齿、锻、热处理、焊接等 18 类机加工艺,擅长非标零件的工艺路线设计。
+
+回答规则:
+1. 专业、简洁、直接,像车间老师傅一样说人话,多用具体参数(转速、进给、切削深度、装夹方式)。
+2. 工艺路线用 Markdown 表格输出:工序号 | 工序名称 | 设备 | 装夹方式 | 切削参数 | 检验要求。
+3. 涉及选材、公差、粗糙度时给出 GB 常用等级与理由。
+4. 数据无法确定时,给出常用经验值并说明"需结合实际情况验证"。
+5. 涉及人身安全、设备安全的操作必须提醒安全注意事项。`;
+
+const SYS_PARSE = `你是图纸解析专家。请从用户上传的 2D 机械工艺图纸中提取信息,严格按以下 Markdown 表格输出:
+| 项目 | 内容 |
+|---|---|
+| 零件名称 | ... |
+| 图号 | ... |
+| 材料 | ... |
+| 关键尺寸与公差 | ... |
+| 表面粗糙度 | ... |
+| 技术要求 | ... |
+看不清或识别不了的内容填"无法识别"。最后加一句对加工难点的简要提示。`;
+
+const SYS_OCR = `请完整提取这张图纸/图片中的所有文字与标注内容,按图纸区域(标题栏、技术要求、尺寸标注、明细表)分类整理输出,不要遗漏,不要添加图片中没有的内容。`;
+
+/* ================= 会话管理 ================= */
+let convos = [], curId = null, pendingImg = null; // pendingImg: {name, dataUrl, w, h}
+try{convos = JSON.parse(localStorage.getItem(CONV_KEY)||'[]')}catch(e){}
+if(convos.length) curId = convos[0].id;
+let busy = false, abortCtl = null;
+
+function saveConvos(){ try{ localStorage.setItem(CONV_KEY, JSON.stringify(convos.slice(0,50))) }catch(e){} }
+function cur(){ return convos.find(c=>c.id===curId) }
+function renderConvs(){
+  const el = document.getElementById('convList');
+  el.innerHTML = convos.map(c=>`<div class="conv-item ${c.id===curId?'active':''}" onclick="openConv('${c.id}')">
+    <span class="t">${esc(c.title||'新对话')}</span><span class="del" onclick="event.stopPropagation();delConv('${c.id}')">✕</span></div>`).join('')||'<div style="text-align:center;color:var(--tx3);font-size:12px;padding:18px 0">暂无历史会话</div>';
+}
+function newChat(){ curId=null; pendingImg=null; renderAll(); document.getElementById('ta').focus(); }
+function openConv(id){ curId=id; pendingImg=null; renderAll(); }
+function delConv(id){
+  convos = convos.filter(c=>c.id!==id); if(curId===id) curId=convos.length?convos[0].id:null;
+  saveConvos(); renderConvs(); renderAll();
+}
+function ensureConv(){
+  if(curId && cur()) return cur();
+  const c = {id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:'新对话', time:Date.now(), msgs:[]};
+  convos.unshift(c); curId=c.id; saveConvos(); renderConvs(); return c;
+}
+
+/* ================= 渲染 ================= */
+const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function renderMd(src){
+  const lines = esc(src).split('\n');
+  let html='', inCode=false, buf=[], inList=null, inTable=false, tbl=[];
+  const flushList=()=>{ if(inList){ html+=`</${inList}>`; inList=null } };
+  const inline = t => t
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>');
+  const cell = t => '<td>'+inline(t.replace(/\|$/,'').trim())+'</td>';
+  for(const raw of lines){
+    const line = raw.replace(/\r$/,'');
+    if(line.startsWith('```')){
+      if(inCode){ html+=`<pre><code>${buf.join('\n')}</code></pre>`; buf=[]; inCode=false; }
+      else { flushList(); inCode=true; }
+      continue;
+    }
+    if(inCode){ buf.push(line); continue; }
+    if(/^\|.*\|$/.test(line.trim()) && line.includes('|')){
+      const cells = line.trim().replace(/^\||\|$/g,'').split('|').map(s=>s.trim());
+      if(!inTable){ flushList(); inTable=true; tbl=[] }
+      if(cells.every(c=>/^:?-{2,}:?$/.test(c))) continue; // 分隔行
+      tbl.push(cells); continue;
+    }
+    if(inTable){
+      html += '<table>' + (tbl[0]?('<thead><tr>'+tbl[0].map(c=>'<th>'+inline(c)+'</th>').join('')+'</tr></thead>'):'')
+        + '<tbody>' + tbl.slice(1).map(r=>'<tr>'+r.map(cell).join('')+'</tr>').join('') + '</tbody></table>';
+      inTable=false; tbl=[];
+    }
+    const m = line.match(/^(#{1,4})\s+(.*)/);
+    if(m){ flushList(); html+=`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; continue; }
+    if(/^[-*]\s+/.test(line)){ if(inList!=='ul'){flushList();inList='ul';html+='<ul>'} html+='<li>'+inline(line.replace(/^[-*]\s+/,''))+'</li>'; continue; }
+    if(/^\d+[.、]\s*/.test(line)){ if(inList!=='ol'){flushList();inList='ol';html+='<ol>'} html+='<li>'+inline(line.replace(/^\d+[.、]\s*/,''))+'</li>'; continue; }
+    if(/^(---+|\*\*\*+)$/.test(line.trim())){ flushList(); html+='<hr>'; continue; }
+    if(line.startsWith('&gt;')){ flushList(); html+='<blockquote>'+inline(line.slice(4))+'</blockquote>'; continue; }
+    flushList();
+    if(line.trim()) html+=`<p>${inline(line)}</p>`;
+  }
+  if(inCode) html+=`<pre><code>${buf.join('\n')}</code></pre>`;
+  if(inTable && tbl.length){ html+='<table>'+tbl.map(r=>'<tr>'+r.map(cell).join('')+'</tr>').join('')+'</table>'; }
+  flushList();
+  return html;
+}
+
+function renderAll(){
+  const c = cur(), inner = document.getElementById('chatInner');
+  const hero = document.getElementById('hero'), cards = document.getElementById('cards'), sugg = document.getElementById('sugg');
+  const has = c && c.msgs.length;
+  hero.style.display = has?'none':'';
+  cards.style.display = has?'none':'';
+  sugg.style.display = has?'none':'';
+  document.querySelectorAll('.msg').forEach(m=>m.remove());
+  if(has) for(const m of c.msgs) appendMsg(m,false);
+  renderConvs();
+  const sel=document.getElementById('modelSel');
+  const curModel = pendingImg && !MODELS.find(x=>x.id===cfg.model).vision ? MODELS[3].id : cfg.model;
+  sel.innerHTML = MODELS.map(x=>`<option value="${x.id}" ${x.id===curModel?'selected':''}>${x.name} · ${x.tag}</option>`).join('');
+  updatePill(); scrollBottom();
+}
+function appendMsg(m, scroll=true){
+  const inner=document.getElementById('chatInner');
+  const d=document.createElement('div');
+  d.className='msg '+(m.role==='user'?'user':'assistant');
+  if(m.role==='user'){
+    let imgs=''; (m.images||[]).forEach(i=>{ imgs+=`<div class="imgbox"><img src="${i}" alt="图纸"></div>` });
+    d.innerHTML=`<div class="avatar">${m.role==='user'?'我':'沃'}</div><div class="bubble">${esc(m.content)}${imgs}</div>`;
+  }else{
+    d.innerHTML=`<div class="avatar">沃</div><div class="bubble md">${renderMd(m.content)}${m.streaming?'<span class="cursor"></span>':''}</div>`;
+  }
+  inner.appendChild(d); if(scroll) scrollBottom();
+  return d;
+}
+function scrollBottom(){ const s=document.getElementById('chatScroll'); s.scrollTop=s.scrollHeight; }
+function updatePill(){
+  const p=document.getElementById('keyPill');
+  if(cfg.apiKey){ p.textContent='● 免费模型已接入'; p.className='pill ok' }
+  else{ p.textContent='未配置 API Key'; p.className='pill warn' }
+  document.getElementById('sendBtn').style.display = busy?'none':'';
+}
+
+/* ================= 提示 ================= */
+let toastTimer;
+function toast(msg, err){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(err?' err':'');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast',2600);
+}
+
+/* ================= 图片上传 ================= */
+document.getElementById('imgBtn').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange = e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f) return;
+  if(!/^image\//.test(f.type)){ toast('仅支持 PNG / JPG / WEBP 图片',true); return }
+  if(f.size>8*1024*1024){ toast('图片超过 8MB,请压缩后重试',true); return }
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1440, sc=Math.min(1,MAX/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      pendingImg={name:f.name, dataUrl:cv.toDataURL('image/jpeg',0.85), w:cv.width, h:cv.height};
+      const box=document.getElementById('imgChips');
+      box.innerHTML=`<div class="img-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a9bff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span>${esc(f.name)}</span><button onclick="clearImg()">✕</button></div>`;
+      renderAll();
+      toast('已上传图纸,将自动使用视觉模型解析');
+    };
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
+};
+function clearImg(){ pendingImg=null; document.getElementById('imgChips').innerHTML=''; renderAll(); }
+
+/* ================= 发送 ================= */
+document.getElementById('ta').addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); send(); }
+});
+document.getElementById('ta').addEventListener('input',e=>{
+  e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,180)+'px';
+});
+
+function send(){
+  if(busy) return;
+  const ta=document.getElementById('ta');
+  const text=ta.value.trim();
+  if(!text && !pendingImg) return;
+  if(!cfg.apiKey){ openSettings(); toast('请先配置免费 API Key(硅基流动注册即得)',true); return }
+  const c=ensureConv();
+  const img = pendingImg;
+  // 有图但当前模型不支持视觉 → 自动切换
+  let model = cfg.model;
+  if(img){
+    const m=MODELS.find(x=>x.id===model);
+    if(!m || !m.vision) model = img.ocr ? 'deepseek-ai/DeepSeek-OCR' : 'THUDM/GLM-4.1V-9B-Thinking';
+  }
+  const sys = img ? (model.includes('OCR')?SYS_OCR:SYS_PARSE) : SYS_PROCESS;
+  const userMsg = {role:'user', content:text||(model.includes('OCR')?'请提取图中所有文字标注':'请解析这张加工图纸'), images: img?[img.dataUrl]:[]};
+  c.msgs.push(userMsg);
+  if(c.title==='新对话') c.title = (text||'图纸解析').slice(0,16);
+  saveConvos();
+  ta.value=''; ta.style.height='auto';
+  pendingImg=null; document.getElementById('imgChips').innerHTML='';
+  appendMsg(userMsg); renderConvs();
+
+  // 组装 API 消息
+  const apiMsgs=[{role:'system',content:sys}];
+  const hist=c.msgs.slice(-12);
+  for(const m of hist){
+    if(m.role==='assistant'){ apiMsgs.push({role:'assistant',content:m.content}); continue; }
+    const parts=[{type:'text',text:m.content}];
+    (m.images||[]).forEach(u=>parts.push({type:'image_url',image_url:{url:u}}));
+    apiMsgs.push({role:'user',content:parts.length===1?parts[0].text:parts});
+  }
+  // 流式
+  const bubble=appendMsg({role:'assistant',content:'',streaming:true});
+  busy=true; updatePill();
+  abortCtl=new AbortController();
+  runStream(apiMsgs, model, bubble, c);
+}
+
+async function runStream(apiMsgs, model, bubble, c){
+  const url=cfg.baseUrl.replace(/\/$/,'')+'/chat/completions';
+  try{
+    const res=await fetch(url,{
+      method:'POST', signal:abortCtl.signal,
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.apiKey},
+      body:JSON.stringify({model, messages:apiMsgs, stream:true, temperature:0.6, max_tokens:4096})
+    });
+    if(!res.ok){
+      let e='HTTP '+res.status; try{ const j=await res.json(); e=j.error?.message||j.message||e }catch(_){}
+      throw new Error(e);
+    }
+    const reader=res.body.getReader(), dec=new TextDecoder();
+    let buf='', full='';
+    while(true){
+      const {done,value}=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines){
+        const l=line.trim();
+        if(!l.startsWith('data:')) continue;
+        const d=l.slice(5).trim();
+        if(d==='[DONE]'){ finish(); return }
+        try{
+          const j=JSON.parse(d);
+          const delta=j.choices?.[0]?.delta?.content;
+          if(delta){ full+=delta; bubble.querySelector('.bubble').innerHTML=renderMd(full)+'<span class="cursor"></span>'; scrollBottom(); }
+        }catch(_){}
+      }
+    }
+    finish();
+    function finish(){
+      const msg={role:'assistant',content:full||'(模型未返回内容)'};
+      c.msgs.push(msg);
+      bubble.querySelector('.bubble').innerHTML=renderMd(msg.content);
+      saveConvos(); busy=false; abortCtl=null; updatePill();
+    }
+  }catch(err){
+    if(err.name==='AbortError'){
+      const msg={role:'assistant',content:full||'(已中断生成)'};
+      c.msgs.push(msg);
+      bubble.querySelector('.bubble').innerHTML=renderMd(msg.content);
+      saveConvos();
+    }else{
+      bubble.querySelector('.bubble').innerHTML=renderMd('⚠️ **请求失败**:'+err.message+'\n\n> 请检查:① API Key 是否正确 ② 网络是否通畅 ③ 模型是否仍免费可用(可在设置中更换模型)');
+      c.msgs.pop(); // 移除占位? 保留错误消息
+      c.msgs.push({role:'assistant',content:'⚠️ 请求失败:'+err.message});
+    }
+    busy=false; abortCtl=null; updatePill();
+  }
+}
+function stopGen(){ if(abortCtl) abortCtl.abort(); }
+
+/* ================= 快捷入口 ================= */
+function quick(n){
+  if(!cfg.apiKey){ openSettings(); toast('请先配置免费 API Key',true); return }
+  document.getElementById('ta').focus();
+  if(n===1) toast('请点击输入框左侧 📎 上传 2D 图纸,AI 将自动解析');
+  else{ ensureConv(); document.getElementById('ta').value='请为以下零件推荐工艺路线:\n零件名称:XX轴\n材料:45钢\n技术要求:'; }
+  document.getElementById('chatScroll').scrollTop=document.getElementById('chatScroll').scrollHeight;
+}
+function chipAsk(t){ document.getElementById('ta').value=t; document.getElementById('ta').focus(); document.getElementById('ta').dispatchEvent(new Event('input')); }
+
+/* ================= 设置 ================= */
+function openSettings(){ document.getElementById('setKey').value=cfg.apiKey; document.getElementById('setBase').value=cfg.baseUrl; document.getElementById('modalBg').classList.add('show'); }
+function closeSettings(){ document.getElementById('modalBg').classList.remove('show'); }
+function saveSettings(){
+  cfg.apiKey=document.getElementById('setKey').value.trim();
+  cfg.baseUrl=document.getElementById('setBase').value.trim()||'https://api.siliconflow.cn/v1';
+  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+  closeSettings(); updatePill(); toast('设置已保存 ✓');
+}
+async function testKey(){
+  const key=document.getElementById('setKey').value.trim();
+  if(!key){ toast('请先输入 API Key',true); return }
+  toast('正在测试连接…');
+  try{
+    const res=await fetch('https://api.siliconflow.cn/v1/models',{headers:{'Authorization':'Bearer '+key}});
+    if(res.ok){ const j=await res.json(); toast('连接成功 ✓ 平台可用模型 '+j.data.length+' 个') }
+    else{ const j=await res.json().catch(()=>({})); toast('连接失败:'+(j.message||('HTTP '+res.status)),true) }
+  }catch(e){ toast('网络错误:'+e.message,true) }
+}
+document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target.id==='modalBg') closeSettings(); });
+document.getElementById('modelSel').onchange=e=>{ cfg.model=e.target.value; localStorage.setItem(CFG_KEY,JSON.stringify(cfg)); };
+
+/* 停止按钮:发送时变为停止 */
+const sendBtn=document.getElementById('sendBtn');
+sendBtn.onclick=()=>{ if(busy) stopGen(); else send(); };
+const _upd=updatePill; updatePill=function(){
+  _upd();
+  sendBtn.innerHTML = busy
+    ? '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+  sendBtn.title = busy?'停止生成':'发送';
+};
+
+renderAll();
+</script>
+</body>
+</html>
